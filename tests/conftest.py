@@ -28,6 +28,24 @@ def sample_book():
     """Returns a Book instance"""
     return Book("1984", "George Orwell", copies=2)
 
+@pytest.fixture
+def single_book():
+    """Returns a reusable Book instance for testing."""
+    def _make(title="Duplicate", author="Author", copies=1):
+        return Book(title, author, copies)
+    return _make
+
+
+@pytest.fixture
+def multiple_books():
+    """Returns a list of Book instances for testing."""
+    def _make(*book_specs):
+        """
+        book_specs: list of tuples like (title, author, copies)
+        """
+        return [Book(title, author, copies) for title, author, copies in book_specs]
+    return _make
+
 
 @pytest.fixture
 def get_book_by_title():

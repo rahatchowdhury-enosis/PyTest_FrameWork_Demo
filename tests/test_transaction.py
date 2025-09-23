@@ -49,30 +49,60 @@ class TestTransactionIntegration:
         # --------------------------
 
         # covers multiple books & multiple fees = edge scenario
-        def test_multiple_books_and_fees(self, sample_user):
-            book1 = Book("Book 1", "Author 1", copies=2)
-            book2 = Book("Book 2", "Author 2", copies=1)
-            sample_user.account.borrow_book(book1)
-            sample_user.account.borrow_book(book2)
+        @pytest.mark.parametrize(
+            "book_specs, fees, expected_balance",
+            [
+                ([("Book 1", "Author 1", 2), ("Book 2", "Author 2", 1)], [10, 15], 75),
+                ([("Book A", "Author A", 1)], [5], 95),
+                ([("Book X", "Author X", 3), ("Book Y", "Author Y", 2)], [20, 10], 70)
+            ]
+        )
+        def test_multiple_books_and_fees_cases(self, sample_user, multiple_books, book_specs, fees, expected_balance):
+            books = multiple_books(*book_specs)
+            for book in books:
+                sample_user.account.borrow_book(book)
+
             txn = Transaction(sample_user)
-            txn.charge_late_fee(10)
-            txn.charge_late_fee(15)
-            assert sample_user.balance == 75
+            for fee in fees:
+                txn.charge_late_fee(fee)
+
+            assert sample_user.balance == expected_balance
 
 
         # edge case: borrowing same book twice
-        def test_edge_case_borrow_same_book(self, sample_user):
-            book = Book("Duplicate", "Author", copies=1)
+        @pytest.mark.parametrize(
+            "title, author, copies",
+            [
+                ("Duplicate", "Author", 1),
+                ("Python 101", "Guido", 1),
+                ("Learn Pytest", "Tester", 1),
+            ]
+        )
+        def test_edge_case_borrow_same_book_with_one_copy_param(self, sample_user, single_book, title, author, copies):
+            book = single_book(title=title, author=author, copies=copies)
             sample_user.account.borrow_book(book)
+
             with pytest.raises(ValueError):
                 sample_user.account.borrow_book(book)
 
 
+
         # edge case: returning a book never borrowed
-        def test_edge_case_return_not_borrowed(self, sample_user):
-            book = Book("Not Borrowed", "Author", copies=1)
+        @pytest.mark.parametrize(
+            "title, author, copies",
+            [
+                ("Not Borrowed", "Author", 1),
+                ("Random Book", "Guido", 2),
+                ("Ghost Book", "Tester", 3),
+            ]
+        )
+        def test_edge_case_return_not_borrowed_param(self, sample_user, single_book, title, author, copies):
+            book = single_book(title=title, author=author, copies=copies)
+
             with pytest.raises(ValueError):
                 sample_user.account.return_book(book)
+
+
 
         # --------------------------
         # New add_funds tests
@@ -125,14 +155,33 @@ class TestTransactionStandAlone:
     class TestTransactionStandAloneRegression:
 
         # negative case: book unavailable
-        def test_user_borrow_unavailable_book(self, sample_user):
-            book = Book("Python", "Guido", copies=0)
+        @pytest.mark.parametrize(
+            "title, author, copies",
+            [
+                ("Python", "Guido", 0),
+                ("Clean Code", "Robert Martin", 0),
+                ("Learn Pytest", "Tester", 0),
+            ]
+        )
+        def test_user_borrow_unavailable_book_param(self, sample_user, single_book, title, author, copies):
+            book = single_book(title=title, author=author, copies=copies)
+
             with pytest.raises(ValueError):
                 sample_user.account.borrow_book(book)
 
+
         # negative case: returning a book not borrowed
-        def test_user_return_non_borrowed_book(self, sample_user):
-            book = Book("Clean Code", "Robert Martin", copies=1)
+        @pytest.mark.parametrize(
+            "title, author, copies",
+            [
+                ("Clean Code", "Robert Martin", 1),
+                ("Python 101", "Guido", 1),
+                ("Learn Pytest", "Tester", 2),
+            ]
+        )
+        def test_user_return_non_borrowed_book_param(self, sample_user, single_book, title, author, copies):
+            book = single_book(title=title, author=author, copies=copies)
+
             with pytest.raises(ValueError):
                 sample_user.account.return_book(book)
 
