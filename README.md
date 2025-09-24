@@ -140,8 +140,8 @@ PyTest_Framework_Demo/
 
 - **Key scenarios:**
   - Adding funds (positive, zero, negative, multiple adds)  
-  - Paying fees (within balance, exact balance, insufficient balance, multiple payments)  
-
+  - Paying fees (within balance, exact balance, insufficient balance, multiple payments)
+  - 
 - **Markers:**
   - **Smoke** → critical paths (adding valid funds, paying valid fee)  
   - **Regression** → edge cases and negative scenarios (invalid amounts, insufficient balance, zero deposits, multiple adds/fees)
