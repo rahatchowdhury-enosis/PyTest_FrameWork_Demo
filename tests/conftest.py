@@ -1,190 +1,22 @@
 import pytest
-from src.user import User
-from src.library import Book, LibraryAccount
-from src.calculator import Calculator
-import requests
-
-# ------------------------
-# Calculator fixture
-# ------------------------
-@pytest.fixture
-def calc():
-    """Returns a Calculator instance"""
-    return Calculator()
-
-# ------------------------
-# Sample user fixture
-# ------------------------
-@pytest.fixture
-def sample_user():
-    """Returns a User instance with default balance and LibraryAccount"""
-    return User("alice", balance=100)
-
-# ------------------------
-# Sample book fixture
-# ------------------------
-@pytest.fixture
-def sample_book():
-    """Returns a Book instance"""
-    return Book("1984", "George Orwell", copies=2)
-
-@pytest.fixture
-def single_book():
-    """Returns a reusable Book instance for testing."""
-    def _make(title="Duplicate", author="Author", copies=1):
-        return Book(title, author, copies)
-    return _make
+from .fixtures.calculator_fixtures import calc
+from .fixtures.library_fixtures import (
+    sample_user,
+    sample_book,
+    single_book,
+    multiple_books,
+    library_users,
+    get_book_by_title,
+    get_book_by_title_and_author,
+)
+from .fixtures.payload_fixtures import post_payload, put_payload, patch_payload
+from tests.apis.posts_api import PostsApi
 
 
-@pytest.fixture
-def multiple_books():
-    """Returns a list of Book instances for testing."""
-    def _make(*book_specs):
-        """
-        book_specs: list of tuples like (title, author, copies)
-        """
-        return [Book(title, author, copies) for title, author, copies in book_specs]
-    return _make
+BASE_URL = "https://jsonplaceholder.typicode.com"
 
 
-@pytest.fixture
-def get_book_by_title():
-    def _get(account, title):
-        return next(b for b in account.borrowed_books if b.title == title)
-    return _get
-
-@pytest.fixture
-def get_book_by_title_and_author():
-    def _get(account, title, author):
-        return next(b for b in account.borrowed_books if (b.title == title and b.author == author))
-    return _get
-
-
-# ------------------------
-# Library users from JSON
-# ------------------------
-@pytest.fixture
-def library_users():
-    """
-    Returns a list of LibraryAccount instances for testing.
-    Alice already has "Python 101".
-    Bob starts with no books.
-    """
-    # Alice with one borrowed book
-    alice = LibraryAccount("Alice")
-    borrowedBooks = Book("Python 101", "Guido", copies=1)
-    alice.borrow_book(borrowedBooks)
-
-    # Bob with no borrowed books
-    bob = LibraryAccount("Bob")
-    bob.borrowed_books = []
-
-    return [alice, bob]
-
-
-# Base URL for all tests
-@pytest.fixture
-def base_url():
-    return "https://jsonplaceholder.typicode.com"
-
-
-@pytest.fixture
-def specific_post_endpoint(base_url):
-    def _make(post_id=None):
-        if post_id:
-            return f"{base_url}/posts/{post_id}"
-        return f"{base_url}/posts"
-    return _make
-
-
-# Example multiple posts endpoint
-@pytest.fixture
-def multiple_posts_endpoint(base_url):
-    return f"{base_url}/posts"
-
-
-# Example payload for POST / PUT / PATCH
-@pytest.fixture
-def post_payload():
-    return {"title": "foo", "body": "bar", "userId": 1}
-
-@pytest.fixture
-def put_payload():
-    return {"id": 1, "title": "updated", "body": "updated body", "userId": 1}
-
-@pytest.fixture
-def patch_payload():
-    return {"title": "patched title"}
-
-@pytest.fixture
-def get_request():
-    def _get(url):
-        return requests.get(url)
-    return _get
-
-@pytest.fixture
-def post_request():
-    def _post(url, json_body):
-        return requests.post(url, json=json_body)
-    return _post
-
-@pytest.fixture
-def put_request():
-    def _put(url, json_body):
-        return requests.put(url, json=json_body)
-    return _put
-
-@pytest.fixture
-def patch_request():
-    def _patch(url, json_body):
-        return requests.patch(url, json=json_body)
-    return _patch
-
-@pytest.fixture
-def delete_request():
-    def _delete(url):
-        return requests.delete(url)
-    return _delete
-
-@pytest.fixture
-def assert_status_code():
-    def _assert(response, expected):
-        assert response.status_code == expected
-    return _assert
-
-@pytest.fixture
-def assert_post_fields():
-    def _assert(data):
-        assert isinstance(data, dict)
-        assert "id" in data
-        assert "userId" in data
-        assert "title" in data
-        assert "body" in data
-    return _assert
-
-@pytest.fixture
-def assert_payload_matches():
-    def _assert(payload, response_json, exclude_keys=None):
-        """
-        Assert all keys/values in payload match response_json.
-        Optionally exclude some keys (like auto-generated 'id').
-        """
-        exclude_keys = exclude_keys or []
-        for key, value in payload.items():
-            if key not in exclude_keys:
-                assert response_json[key] == value, f"Mismatch for key '{key}'"
-    return _assert
-
-@pytest.fixture
-def assert_post_list_fields():
-    def _assert(data, n=5):
-        assert isinstance(data, list)
-        assert len(data) > 0
-        for post in data[:n]:
-            assert "id" in post
-            assert "userId" in post
-            assert "title" in post
-            assert "body" in post
-    return _assert
-
-
+@pytest.fixture(scope="session")
+def posts_api():
+    """Provides a reusable API client for /posts endpoints."""
+    return PostsApi(base_url=BASE_URL)
