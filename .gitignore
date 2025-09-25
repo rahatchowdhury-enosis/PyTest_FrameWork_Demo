@@ -1,0 +1,17 @@
+# Python bytecode
+__pycache__/
+**/__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Virtual environments
+venv/
+env/
+
+# Optional common ignores
+*.egg-info/
+dist/
+build/
+.idea
+.pytest_cache
